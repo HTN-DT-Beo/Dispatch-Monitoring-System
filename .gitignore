@@ -1,0 +1,6 @@
+# Ignore tập dữ liệu
+Data/
+Models/
+
+*.pt
+*.mp4

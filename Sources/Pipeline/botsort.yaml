@@ -1,0 +1,32 @@
+# BoT-SORT tracker configuration for Ultralytics
+# ───────────────────────────────────────────────
+tracker_type: botsort        # ['botsort', 'bytetrack']
+
+# 1. Association thresholds ─────────────────────
+track_high_thresh: 0.25      # kết hợp mạnh
+track_low_thresh: 0.10       # kết hợp yếu
+new_track_thresh: 0.25       # khởi tạo track mới
+track_buffer: 30             # số frame giữ track mất dấu
+match_thresh: 0.80           # ngưỡng IoU-Score để ghép
+fuse_score: true             # trộn confidence & IoU
+
+# 2. BoT-SORT đặc trưng ─────────────────────────
+gmc_method: sparseOptFlow    # bù chuyển động camera
+
+# 3. Re-Identification (đã bật) ─────────────────
+with_reid: true              # bật Re-ID
+model: osnet_x0_25_msmt17.pt # đường dẫn .pt
+device: cpu                  # 'cuda' hoặc 'cpu'
+fp16: false                  # true nếu muốn half-precision GPU
+
+# Ngưỡng ghép Re-ID
+proximity_thresh: 0.50       # IoU tối thiểu để xét Re-ID
+appearance_thresh: 0.25      # độ giống cosine tối thiểu
+
+# 4. Kalman / motion filter  ─────────────────────
+max_dist: 0.2
+max_iou_distance: 0.7
+max_age: 30
+n_init: 3
+nn_budget: 100
+ema_alpha: 0.9

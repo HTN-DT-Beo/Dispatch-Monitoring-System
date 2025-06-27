@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    volumes:
+      - ./AU:/app/AU         # dữ liệu + weights
+      - ./videos:/tmp        # output video
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+  ui:
+    build:
+      context: .
+      dockerfile: docker/ui.Dockerfile
+    depends_on: [api]
+    ports:
+      - "3000:80"
