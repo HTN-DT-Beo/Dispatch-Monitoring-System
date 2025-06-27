@@ -10,7 +10,7 @@ import torch
 MODEL_PATH = "Models"
 CLASSIFICATION_DIR = MODEL_PATH + "/Classification"
 DETECTION_DIR = MODEL_PATH + "/Detection"
-VIDEO_IN  = Path(r"D:\Project\Dispatch_Monitoring_System\Dispatch-Monitoring-System\Data\test_03.mp4")
+VIDEO_IN  = Path(r"D:\Project\Dispatch_Monitoring_System\Dispatch-Monitoring-System\Data\test_04.mp4")
 VIDEO_OUT = "output.mp4"
 
 # ─── Tham số ─────────────────────────────────────────────────
@@ -32,59 +32,54 @@ def classify(img, sess, labels):
 
 # ─── Load mô hình ────────────────────────────────────────────
 det_model = YOLO(f"{DETECTION_DIR}/best.pt")
-print(det_model.names)
-# r = det_model('Data\p_test_01.png')
-# r = det_model('Data\p_test_02.png')
-det_model.predict(VIDEO_IN)
+dish_sess = ort.InferenceSession(f"{CLASSIFICATION_DIR}/dish_cls.onnx", providers=["CPUExecutionProvider"])
+tray_sess = ort.InferenceSession(f"{CLASSIFICATION_DIR}/tray_cls.onnx", providers=["CPUExecutionProvider"])
 
-# dish_sess = ort.InferenceSession(f"{CLASSIFICATION_DIR}/dish_cls.onnx", providers=["CPUExecutionProvider"])
-# tray_sess = ort.InferenceSession(f"{CLASSIFICATION_DIR}/tray_cls.onnx", providers=["CPUExecutionProvider"])
+# ─── VideoWriter ─────────────────────────────────────────────
+writer = None
 
-# # ─── VideoWriter ─────────────────────────────────────────────
-# writer = None
+# ─── Xử lý video ─────────────────────────────────────────────
+with torch.no_grad():
+    for res in det_model.track(
+            source=str(VIDEO_IN),
+            tracker="botsort.yaml",
+            classes=[0, 1],  # dish = 0, tray = 1
+            conf=0.15,
+            stream=True,
+            show=True,
+            verbose=False):
 
-# # ─── Xử lý video ─────────────────────────────────────────────
-# with torch.no_grad():
-#     for res in det_model.track(
-#             source=str(VIDEO_IN),
-#             tracker="botsort.yaml",
-#             classes=[0, 1],  # dish = 0, tray = 1
-#             conf=0.15,
-#             stream=True,
-#             show=True,
-#             verbose=False):
+        frame = res.orig_img
 
-#         frame = res.orig_img
+        # Khởi tạo writer khi có frame đầu tiên
+        if writer is None:
+            h, w = frame.shape[:2]
+            fps = res.fps if hasattr(res, "fps") else 30
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            writer = cv2.VideoWriter(VIDEO_OUT, fourcc, fps, (w, h))
 
-#         # Khởi tạo writer khi có frame đầu tiên
-#         if writer is None:
-#             h, w = frame.shape[:2]
-#             fps = res.fps if hasattr(res, "fps") else 30
-#             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-#             writer = cv2.VideoWriter(VIDEO_OUT, fourcc, fps, (w, h))
+        # Track & phân loại
+        if res.boxes.id is not None:
+            for box, tid, cid in zip(res.boxes.xyxy.cpu().numpy(),
+                                    res.boxes.id.cpu().numpy(),
+                                    res.boxes.cls.cpu().numpy()):
+                x1, y1, x2, y2 = map(int, box)
+                crop = frame[y1:y2, x1:x2]
 
-#         # Track & phân loại
-#         if res.boxes.id is not None:
-#             for box, tid, cid in zip(res.boxes.xyxy.cpu().numpy(),
-#                                     res.boxes.id.cpu().numpy(),
-#                                     res.boxes.cls.cpu().numpy()):
-#                 x1, y1, x2, y2 = map(int, box)
-#                 crop = frame[y1:y2, x1:x2]
+                if cid == 0:  # dish
+                    label_cls = "dish"
+                    state = classify(crop, dish_sess, LABELS_DISH)
+                else:         # tray
+                    label_cls = "tray"
+                    state = classify(crop, tray_sess, LABELS_TRAY)
 
-#                 if cid == 0:  # dish
-#                     label_cls = "dish"
-#                     state = classify(crop, dish_sess, LABELS_DISH)
-#                 else:         # tray
-#                     label_cls = "tray"
-#                     state = classify(crop, tray_sess, LABELS_TRAY)
+                # Vẽ bbox + nhãn
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                text = f"{int(tid)}-{label_cls}-{state}"
+                cv2.putText(frame, text, (x1, y1 - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-#                 # Vẽ bbox + nhãn
-#                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-#                 text = f"{int(tid)}-{label_cls}-{state}"
-#                 cv2.putText(frame, text, (x1, y1 - 5),
-#                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        writer.write(frame)
 
-#         writer.write(frame)
-
-# writer.release()
-# print("✅ Saved to", VIDEO_OUT)
+writer.release()
+print("✅ Saved to", VIDEO_OUT)
