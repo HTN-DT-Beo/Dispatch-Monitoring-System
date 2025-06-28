@@ -35,51 +35,74 @@ det_model = YOLO(f"{DETECTION_DIR}/best.pt")
 dish_sess = ort.InferenceSession(f"{CLASSIFICATION_DIR}/dish_cls.onnx", providers=["CPUExecutionProvider"])
 tray_sess = ort.InferenceSession(f"{CLASSIFICATION_DIR}/tray_cls.onnx", providers=["CPUExecutionProvider"])
 
-# ─── VideoWriter ─────────────────────────────────────────────
-writer = None
-
-# ─── Xử lý video ─────────────────────────────────────────────
-with torch.no_grad():
-    for res in det_model.track(
-            source=str(VIDEO_IN),
+# ─── Hàm chạy pipeline ──────────────────────────────────────
+def run(video_in: Path, video_out: str = "videos/output.mp4", show: bool = True):
+    writer = None
+    with torch.no_grad():
+        frame_count = 0
+        for res in det_model.track(
+            source=str(video_in),
             tracker="botsort.yaml",
-            classes=[0, 1],  # dish = 0, tray = 1
+            classes=[0, 1],
             conf=0.15,
             stream=True,
-            show=True,
-            verbose=False):
+            show=show,
+            verbose=False,
+        ):
+            frame = res.orig_img
+            if frame is None:
+                print("⚠️ Không có frame")
+                continue
+            if writer is None:
+                h, w = frame.shape[:2]
+                fps = res.fps if hasattr(res, "fps") else 30
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v") #avc1
+                writer = cv2.VideoWriter(video_out, fourcc, fps, (w, h))
+                if not writer.isOpened():                       # ➊
+                    raise RuntimeError("❌ VideoWriter mở không thành công")
+                print("🎬 Writer opened:", video_out)            # ➋
 
-        frame = res.orig_img
+            # ── Track & phân loại (giữ nguyên) ──
+            if res.boxes.id is not None:
+                for box, tid, cid in zip(
+                    res.boxes.xyxy.cpu().numpy(),
+                    res.boxes.id.cpu().numpy(),
+                    res.boxes.cls.cpu().numpy(),
+                ):
+                    x1, y1, x2, y2 = map(int, box)
+                    crop = frame[y1:y2, x1:x2]
 
-        # Khởi tạo writer khi có frame đầu tiên
-        if writer is None:
-            h, w = frame.shape[:2]
-            fps = res.fps if hasattr(res, "fps") else 30
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            writer = cv2.VideoWriter(VIDEO_OUT, fourcc, fps, (w, h))
+                    if cid == 0:
+                        state = classify(crop, dish_sess, LABELS_DISH)
+                        label_cls = "dish"
+                    else:
+                        state = classify(crop, tray_sess, LABELS_TRAY)
+                        label_cls = "tray"
 
-        # Track & phân loại
-        if res.boxes.id is not None:
-            for box, tid, cid in zip(res.boxes.xyxy.cpu().numpy(),
-                                    res.boxes.id.cpu().numpy(),
-                                    res.boxes.cls.cpu().numpy()):
-                x1, y1, x2, y2 = map(int, box)
-                crop = frame[y1:y2, x1:x2]
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    text = f"{int(tid)}-{label_cls}-{state}"
+                    cv2.putText(
+                        frame,
+                        text,
+                        (x1, y1 - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6,
+                        (0, 255, 0),
+                        2,
+                    )
 
-                if cid == 0:  # dish
-                    label_cls = "dish"
-                    state = classify(crop, dish_sess, LABELS_DISH)
-                else:         # tray
-                    label_cls = "tray"
-                    state = classify(crop, tray_sess, LABELS_TRAY)
+            writer.write(frame)
+            frame_count += 1
 
-                # Vẽ bbox + nhãn
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                text = f"{int(tid)}-{label_cls}-{state}"
-                cv2.putText(frame, text, (x1, y1 - 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    writer.release()
+    print(f"✅ Saved to {video_out}, total frames written: {frame_count}")
+    print("✅ Saved to", video_out)
+    return video_out
 
-        writer.write(frame)
+# ─── Chạy từ CLI (python infer.py in.mp4 [out.mp4]) ─────────
+if __name__ == "__main__":
+    import sys
 
-writer.release()
-print("✅ Saved to", VIDEO_OUT)
+    in_path  = Path(sys.argv[1]) if len(sys.argv) >= 2 else VIDEO_IN
+    out_path = sys.argv[2]       if len(sys.argv) >= 3 else VIDEO_OUT
+    run(in_path, out_path, show=True)

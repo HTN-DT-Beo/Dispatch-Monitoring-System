@@ -1,22 +1,24 @@
-version: "3.9"
 services:
   api:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
-    volumes:
-      - ./AU:/app/AU         # dữ liệu + weights
-      - ./videos:/tmp        # output video
-    ports:
+    container_name: dms-api
+    ports:      # chỉ cần nội bộ network
       - "8000:8000"
-    deploy:
-      resources:
-        limits:
-          memory: 4g
+    volumes:     # nếu muốn cập nhật model mà không rebuild
+      - ./Models:/app/Models
+    environment:
+      YOLO_CONFIG_DIR: /tmp/ultralytics_config
+
   ui:
     build:
       context: .
       dockerfile: docker/ui.Dockerfile
-    depends_on: [api]
+    container_name: dms-ui
     ports:
-      - "3000:80"
+      - "8501:8501"
+    depends_on:
+      - api
+    volumes:
+      - ./Videos:/app/videos

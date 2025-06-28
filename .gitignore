@@ -1,6 +1,6 @@
 # Ignore tập dữ liệu
 Data/
 Models/
-
+my-app/
 *.pt
 *.mp4
