@@ -57,13 +57,13 @@ docker-compose up --build
 
 ### ⚠️ Limitations
 
-- ⏱️ Time constraint: Only **3 days** were available for implementation, which limited the system's completeness.
-- 📐 **Mismatch in training and real-world camera angles**:  
+- Time constraint: Only **3 days** were available for implementation, which limited the system's completeness.
+- **Mismatch in training and real-world camera angles**:  
   The model was trained on images from a different angle than the actual camera footage. As a result, performance on full-view test videos may not be optimal.  
-  👉 A cropped video with close-up footage of the food counter yielded much better results.
-- 🖥️ **UI limitations**:  
+  A cropped video with close-up footage of the food counter yielded much better results.
+- **UI limitations**:  
   The interface is still basic and not tailored to actual user needs.
-- 📉 **Missing feedback loop**:  
+- **Missing feedback loop**:  
   The requirement:  
   *"The system should also include functionality to improve model performance based on user feedback"*  
   has not yet been implemented.
