@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY Sources/ /app/Sources
 
 # Copy script tải model và thực thi
-COPY download_models.sh /app/download_models.sh
-RUN chmod +x /app/download_models.sh && ./download_models.sh
+COPY ./download_models.sh /app/download_models.sh
+RUN chmod +x /app/download_models.sh && bash /app/download_models.sh
 
 # Cấu hình
 ENV PYTHONPATH=/app
