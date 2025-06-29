@@ -9,6 +9,7 @@ Intelligent monitoring system for a commercial kitchen's dispatch area.
 - **Video demo model inference:**  https://youtu.be/O5Kx10YaMz0  
 - **Video demo display system:** https://youtu.be/_YJ33nJ0lkM
 - **Link Model:** https://drive.google.com/drive/folders/1wlRoW0Cp-XeQK550w4agtjz3OFXX-UiS?usp=drive_link
+- **Folder Video Test:** https://drive.google.com/drive/folders/10hAtDGOmXI0b0g_7EsMWT2lq70dBfEaN?usp=sharing
 
 ---
 
