@@ -6,8 +6,8 @@ services:
     container_name: dms-api
     ports:      # chỉ cần nội bộ network
       - "8000:8000"
-    volumes:     # nếu muốn cập nhật model mà không rebuild
-      - ./Models:/app/Models
+    # volumes:     # nếu muốn cập nhật model mà không rebuild
+    #   - ./Models:/app/Models
     environment:
       YOLO_CONFIG_DIR: /tmp/ultralytics_config
 

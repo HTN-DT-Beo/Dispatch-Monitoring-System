@@ -30,8 +30,8 @@ if uploaded:
         st.success("✅ Đã xử lý xong!")
 
         # Phát video từ đường dẫn file đã lưu
-        st.subheader("🎬 Video kết quả")
-        st.video(str(result_path))
+        # st.subheader("🎬 Video kết quả")
+        # st.video(str(result_path))
 
         # Hiển thị frame đầu tiên
         st.subheader("🖼 Frame đầu")
