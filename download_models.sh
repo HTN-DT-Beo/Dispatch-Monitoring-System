@@ -1,10 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
-echo "📥 Downloading Models.zip from Google Drive..."
-gdown --id 1abcDEFghiJKLmnopQRstuVWXYZ -O Models.zip
+FOLDER_ID="1wlRoW0Cp-XeQK550w4agtjz3OFXX-UiS"   # ID folder thật
 
-echo "🗜️ Unzipping Models.zip..."
-unzip Models.zip -d Models
+echo "📥 Downloading Google‑Drive folder ..."
+gdown --folder "$FOLDER_ID" -O Models          # sẽ tạo ./Models/...
 
-echo "🧹 Cleaning up zip file..."
-rm Models.zip
+echo "✅ Done"
