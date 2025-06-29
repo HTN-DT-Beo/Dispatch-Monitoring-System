@@ -1,33 +1,35 @@
 FROM python:3.11
 
-# 0. Cài ffmpeg (đọc/ghi mp4) + tini (quản lý signal gọn)
+# Cài ffmpeg + unzip + gdown
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsm6 \
     libxext6 \
     libavcodec-extra \
+    unzip \
     && apt-get clean
+
+# Cài gdown (dùng để tải từ Google Drive)
+RUN pip install --no-cache-dir gdown
 
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# 1. Copy & cài requirements
+# Copy requirements và cài
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Copy code + models + botsort yaml
-COPY Sources/  /app/Sources
-COPY Models/  /app/Models
+# Copy code
+COPY Sources/ /app/Sources
 
+# Copy script tải model và thực thi
+COPY download_models.sh /app/download_models.sh
+RUN chmod +x /app/download_models.sh && ./download_models.sh
 
-# 3. Khai báo port & PYTHONPATH
+# Cấu hình
 ENV PYTHONPATH=/app
 EXPOSE 8000
-
-# 4. Tạo thư mục videos để lưu kết quả
 RUN mkdir /app/videos
 
-# 5. Run Uvicorn
+# Chạy app
 CMD ["uvicorn", "Sources.API.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-
