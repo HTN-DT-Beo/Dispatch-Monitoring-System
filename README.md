@@ -16,7 +16,7 @@ Intelligent monitoring system for a commercial kitchen's dispatch area.
 ### 1. Clone the repository
 
 ```bash
-https://github.com/HTN-DT-Beo/Dispatch-Monitoring-System.git
+git clone https://github.com/HTN-DT-Beo/Dispatch-Monitoring-System.git
 cd Dispatch-Monitoring-System
 ```
 ### 2. Check Docker
